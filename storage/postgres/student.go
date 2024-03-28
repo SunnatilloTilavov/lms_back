@@ -161,24 +161,59 @@ func (c *StudentRepo) GetAll(req models.GetAllStudentsRequest) (models.GetAllStu
 }
 
 func (c *StudentRepo) GetByID(id string) (models.Student, error) {
-	student := models.Student{}
-	if err := c.db.QueryRow(context.Background(),`select id, full_name, email, age, paid_sum, status, login, password, group_id, created_at from student where id = $1`, id).Scan(
-		&student.Id,
-		&student.Full_Name,
-		&student.Email,
-		&student.Age,
-		&student.PaidSum,
-		&student.Status,
-		&student.Login,
-		&student.Password, 
-		&student.GroupID,
-		&student.Created_At,
-		); err != nil {
-		return models.Student{}, err
+	var(
+		student = models.Student{}
+		updateAt  sql.NullString
+		group_id  sql.NullString
+		full_name sql.NullString
+		email sql.NullString
+		age sql.NullInt64
+		paid_sum sql.NullFloat64
+		status sql.NullString
+		login sql.NullString
+		password sql.NullString
+		created_at sql.NullString
+		
+	)
+	 err := c.db.QueryRow(context.Background(),
+	`select full_name, email,
+	age, paid_sum, status, login,
+	password, group_id, created_at,
+	updated_at from student where id = $1`, id).Scan(
+		&full_name,
+		&email,
+		&age,
+		&paid_sum,
+		&status,
+		&login,
+		&password,
+		&group_id,
+		&created_at,
+		&updateAt,
+		)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return models.Student{}, fmt.Errorf("student with ID %s not found", student.Id)
+			}
+			return models.Student{}, err
+		}
+	
+		student = models.Student{
+			Id: id,
+			Full_Name:   full_name.String,
+			Email:      email.String,
+			Age:        int(age.Int64),
+			PaidSum:    float64(paid_sum.Float64),
+			Status:     status.String,
+			Login:      login.String,
+			Password:   password.String,
+			GroupID:    group_id.String,
+			Created_At:  created_at.String,
+			Updated_At:  updateAt.String,
+		}
+		return student, nil
 	}
-	return student, nil
-}
-
+	
 func (c *StudentRepo) Delete(id string) error {
 	query := `delete from student where id = $1`
 	_, err := c.db.Exec(context.Background(),query, id)

@@ -151,18 +151,44 @@ func (c *TeacherRepo) GetAll(req models.GetAllTeachersRequest) (models.GetAllTea
 
 func (c *TeacherRepo) GetByID(id string) (models.Teacher, error) {
 	teacher := models.Teacher{}
+	var (
+		updateAt  sql.NullString
+		full_name sql.NullString
+		email sql.NullString
+		age sql.NullInt64
+		login sql.NullString
+		password sql.NullString
+		status sql.NullString
+		create_at sql.NullString
 
-	if err := c.db.QueryRow(context.Background(),`select id, full_name, email, age, login, password, status, created_at from teacher where id = $1`, id).Scan(
-		&teacher.Id,
-		&teacher.Full_name,
-		&teacher.Email,
-		&teacher.Age,
-		&teacher.Login,
-		&teacher.Password,
-		&teacher.Status,
-		&teacher.Created_at,
-		); err != nil {
+	)
+
+	err := c.db.QueryRow(context.Background(),
+	`select  full_name, email, 
+	age, login, password, status,
+	created_at from teacher where id = $1`, id).Scan(
+		&full_name,
+		&email,
+		&age,
+		&login,
+		&password,
+		&status,
+		&create_at,
+		)
+		if err != nil {
 		return models.Teacher{}, err
+	}
+	teacher =models.Teacher{
+		Id: id,
+		Full_name: full_name.String,
+		Email: email.String,
+		Age: int(age.Int64),
+		Login: login.String,
+		Password: password.String,
+		Status: status.String,
+		Created_at: create_at.String,
+		Updated_at: updateAt.String,
+
 	}
 	return teacher, nil
 }

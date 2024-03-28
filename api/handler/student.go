@@ -132,16 +132,13 @@ func (h Handler) GetAllStudent(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDStudent(c *gin.Context) {
-
-	id := c.Param("id")
-	fmt.Println("id: ", id)
-
-	student, err := h.Store.Student().GetByID(id)
+	Id := c.Param("id")
+	id, err := h.Store.Student().GetByID(Id)
 	if err != nil {
-		handleResponse(c, "error while getting student by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, "error while getbyid student", http.StatusInternalServerError, err.Error())
 		return
 	}
-	handleResponse(c, "", http.StatusOK, student)
+	handleResponse(c, "getbyid successfully", http.StatusOK, id)
 }
 
 // DeleteStudent godoc

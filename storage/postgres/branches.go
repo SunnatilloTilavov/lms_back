@@ -118,13 +118,36 @@ func (c *branchRepo) GetAll(req models.GetAllBranchesRequest) (models.GetAllBran
 
 func (c *branchRepo) GetByID(id string) (models.Branches, error) {
 	branch := models.Branches{}
+	var (
+		name sql.NullString
+		address sql.NullString
+		create_at sql.NullString
+		updateAt sql.NullString
+		deleted_at sql.NullString
+	)
 
-	if err := c.db.QueryRow(context.Background(),`select id, name, address, created_at from branches where id = $1`, id).Scan(
-		&branch.Id,
-		&branch.Name,
-		&branch.Address,
-		&branch.CreatedAt); err != nil {
+	if err := c.db.QueryRow(context.Background(),
+	`select id, name, 
+	address, created_at,
+	updated_at,
+	deleted_at
+	from branches where id = $1`, id).Scan(
+		&id,
+		&name,
+		&address,
+		&create_at,
+		&updateAt,
+		&deleted_at); err != nil {
 		return models.Branches{}, err
+	}
+	
+	branch=models.Branches{
+		Id: id,
+		Name: name.String,
+		Address: address.String,
+		CreatedAt: create_at.String,
+		UpdatedAt: updateAt.String,
+		DeletedAt: deleted_at.String,
 	}
 	return branch, nil
 }

@@ -148,19 +148,41 @@ func (g *GroupRepo) GetAll(req models.GetAllGroupsRequest) (models.GetAllGroupsR
 
 func (g *GroupRepo) GetByID(id string) (models.Group, error) {
 	group := models.Group{}
+	var (
+		group_id sql.NullString
+		branch_id sql.NullString
+		teacher_id sql.NullString
+		type1 sql.NullString
+		create_at sql.NullString
+		updateAt   sql.NullString	
+	)
 
-	if err := g.db.QueryRow(context.Background(),`SELECT id, group_id,
+	err := g.db.QueryRow(context.Background(),
+	`SELECT  group_id,
 	 branch_id, teacher_id, 
 	 type, created_at, 
 	 updated_at FROM "group" WHERE id = $1`, id).Scan(
-		&group.Id,
-		&group.Group_id,
-		&group.Branch_id,
-		&group.Teacher_id,
-		&group.Type,
-		&group.Created_at,
-		&group.Updated_at); err != nil {
+		&group_id,
+		&branch_id,
+		&teacher_id,
+		&type1,
+		&create_at,
+		&updateAt)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return models.Group{}, fmt.Errorf("student with ID %s not found", id)
+			}
 		return models.Group{}, err
+	}
+	group = models.Group{
+		Id:id,
+		Group_id: group_id.String,
+		Branch_id: branch_id.String,
+		Teacher_id: teacher_id.String,
+		Type: type1.String,
+		Created_at: create_at.String,
+		Updated_at: updateAt.String,
+
 	}
 	return group, nil
 }

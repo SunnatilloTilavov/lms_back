@@ -47,7 +47,7 @@ type IPaymentStorage interface {
 type IStudentStorage interface {
 	Create(models.CreateStudent) (models.CreateStudent, error)
 	GetAll(request models.GetAllStudentsRequest) (models.GetAllStudentsResponse, error)
-	GetByID(id string) (models.Student, error)
+	GetByID(string) (models.Student, error)
 	Update(models.UpdateStudent) (models.UpdateStudent, error)
 	Delete(string) error
 }

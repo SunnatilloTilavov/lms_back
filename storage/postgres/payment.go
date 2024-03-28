@@ -102,18 +102,41 @@ func (p *paymentRepo) GetAll(req models.GetAllPaymentsRequest) (models.GetAllPay
 
 func (p *paymentRepo) GetByID(id string) (models.Payment, error) {
 	var payment models.Payment
+	var (
+		price sql.NullFloat64
+		student_id sql.NullString
+		branch_id sql.NullString
+		admin_id sql.NullString
+		created_at sql.NullString
+		updated_at sql.NullString			
+	)
 
-	row := p.db.QueryRow(context.Background(),`SELECT id, price, student_id, branch_id, admin_id, created_at, updated_at FROM payment WHERE id = $1`, id)
-	if err := row.Scan(
-		&payment.Id,
-		&payment.Price,
-		&payment.Student_id,
-		&payment.Branch_id,
-		&payment.Admin_id,
-		&payment.CreatedAt,
-		&payment.UpdatedAt,
-	); err != nil {
+	row := p.db.QueryRow(context.Background(),
+	`SELECT  price, student_id,
+	 branch_id, admin_id, created_at,
+	  updated_at FROM payment WHERE id = $1`, id)
+ 	err := row.Scan(
+			&price,
+			&student_id,
+			&branch_id,
+			&admin_id,
+			&created_at,
+			&updated_at,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Payment{}, fmt.Errorf("student with ID %s not found",id)
+		}
 		return payment, err
+	}
+	payment =models.Payment{
+		Id: id,
+		Price: float64(price.Float64),
+		Student_id: student_id.String,
+		Branch_id: branch_id.String,
+		Admin_id: admin_id.String,
+		CreatedAt: created_at.String,
+		UpdatedAt: updated_at.String,
 	}
 
 	return payment, nil
