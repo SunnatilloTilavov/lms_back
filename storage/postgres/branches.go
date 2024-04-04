@@ -20,7 +20,7 @@ func NewBranch(db *pgxpool.Pool) branchRepo {
 	}
 }
 
-func (c *branchRepo) Create(branch models.CreateBranches) (models.CreateBranches, error) {
+func (c *branchRepo) Create(ctx context.Context,branch models.CreateBranches) (models.CreateBranches, error) {
 
 	id := uuid.New()
 	query := `INSERT INTO branches (
@@ -42,14 +42,14 @@ func (c *branchRepo) Create(branch models.CreateBranches) (models.CreateBranches
 	return branch, nil
 }
 
-func (c *branchRepo) Update(branch models.UpdateBranches) (models.UpdateBranches, error) {
+func (c *branchRepo) Update(ctx context.Context,branch models.UpdateBranches) (models.UpdateBranches, error) {
 	query := `update branches set 
 	name=$1,
 	address=$2,
 	updated_at=CURRENT_TIMESTAMP
 	WHERE id = $3 
 	`
-	_, err := c.db.Exec(context.Background(),query,
+	_, err := c.db.Exec(ctx,query,
 		branch.Name,
 		branch.Address,
 		branch.Id,
@@ -60,7 +60,7 @@ func (c *branchRepo) Update(branch models.UpdateBranches) (models.UpdateBranches
 	return branch, err
 }
 
-func (c *branchRepo) GetAll(req models.GetAllBranchesRequest) (models.GetAllBranchesResponse, error) {
+func (c *branchRepo) GetAll(ctx context.Context,req models.GetAllBranchesRequest) (models.GetAllBranchesResponse, error) {
 	var (
 		resp   = models.GetAllBranchesResponse{}
 		filter = ""
@@ -74,7 +74,7 @@ func (c *branchRepo) GetAll(req models.GetAllBranchesRequest) (models.GetAllBran
 	filter += fmt.Sprintf(" OFFSET %v LIMIT %v", offset, req.Limit)
 	fmt.Println("filter: ", filter)
 
-	rows, err := c.db.Query(context.Background(),`select count(id) over(),
+	rows, err := c.db.Query(ctx,`select count(id) over(),
         id,
         name,
         address,
@@ -116,8 +116,8 @@ func (c *branchRepo) GetAll(req models.GetAllBranchesRequest) (models.GetAllBran
 	return resp, nil
 }
 
-func (c *branchRepo) GetByID(id string) (models.Branches, error) {
-	branch := models.Branches{}
+func (c *branchRepo) GetByID(ctx context.Context,branch  models.Branches) (models.Branches, error) {
+	
 	var (
 		name sql.NullString
 		address sql.NullString
@@ -126,13 +126,12 @@ func (c *branchRepo) GetByID(id string) (models.Branches, error) {
 		deleted_at sql.NullString
 	)
 
-	if err := c.db.QueryRow(context.Background(),
-	`select id, name, 
+	if err := c.db.QueryRow(ctx,
+	`select  name, 
 	address, created_at,
 	updated_at,
 	deleted_at
-	from branches where id = $1`, id).Scan(
-		&id,
+	from branches where id = $1`, branch.Id).Scan(
 		&name,
 		&address,
 		&create_at,
@@ -142,7 +141,6 @@ func (c *branchRepo) GetByID(id string) (models.Branches, error) {
 	}
 	
 	branch=models.Branches{
-		Id: id,
 		Name: name.String,
 		Address: address.String,
 		CreatedAt: create_at.String,
@@ -152,9 +150,9 @@ func (c *branchRepo) GetByID(id string) (models.Branches, error) {
 	return branch, nil
 }
 
-func (c *branchRepo) Delete(id string) error {
+func (c *branchRepo) Delete(ctx context.Context,id string) error {
 	query := `delete from branches where id = $1`
-	_, err := c.db.Exec(context.Background(),query, id)
+	_, err := c.db.Exec(ctx,query, id)
 	if err != nil {
 		return err
 	}

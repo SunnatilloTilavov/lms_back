@@ -21,7 +21,7 @@ func NewGroup(db *pgxpool.Pool) GroupRepo {
 	}
 }
 
-func (g *GroupRepo) Create(group models.CreateGroup) (models.CreateGroup, error) {
+func (g *GroupRepo) Create(ctx context.Context,group models.CreateGroup) (models.CreateGroup, error) {
 	id := uuid.New()
 	var group_unique_id string
 
@@ -29,7 +29,7 @@ func (g *GroupRepo) Create(group models.CreateGroup) (models.CreateGroup, error)
 	SELECT MAX(group_id) 
 	FROM "group"
 	`
-	err := g.db.QueryRow(context.Background(),maxQuery).Scan(&group_unique_id)
+	err := g.db.QueryRow(ctx,maxQuery).Scan(&group_unique_id)
 	if err != nil {
 		if err.Error() != "can't scan into dest[0]: cannot scan null into *string" && err.Error() != "no rows in result set" {
 			return group, err
@@ -56,7 +56,7 @@ func (g *GroupRepo) Create(group models.CreateGroup) (models.CreateGroup, error)
 		VALUES($1,$2,$3,$4,$5,CURRENT_TIMESTAMP)
 		`
 
-	_, err = g.db.Exec(context.Background(),query,
+	_, err = g.db.Exec(ctx,query,
 		id.String(),
 		"Gr-"+pkg.GetSerialId(digit),
 		group.Branch_id,
@@ -68,20 +68,20 @@ func (g *GroupRepo) Create(group models.CreateGroup) (models.CreateGroup, error)
 	return group, nil
 }
 
-func (g *GroupRepo) Update(group models.UpdateGroup) (models.UpdateGroup, error) {
+func (g *GroupRepo) Update(ctx context.Context,group models.UpdateGroup) (models.UpdateGroup, error) {
 	query := `UPDATE "group" SET
 		type=$1,
 		updated_at=CURRENT_TIMESTAMP
 		WHERE id=$2`
 
-	_, err := g.db.Exec(context.Background(),query, group.Type, group.Id)
+	_, err := g.db.Exec(ctx,query, group.Type, group.Id)
 	if err != nil {
 		return group, nil
 	}
 	return group, nil
 }
 
-func (g *GroupRepo) GetAll(req models.GetAllGroupsRequest) (models.GetAllGroupsResponse, error) {
+func (g *GroupRepo) GetAll(ctx context.Context,req models.GetAllGroupsRequest) (models.GetAllGroupsResponse, error) {
 	var (
 		resp   = models.GetAllGroupsResponse{}
 		filter = ""
@@ -95,7 +95,7 @@ func (g *GroupRepo) GetAll(req models.GetAllGroupsRequest) (models.GetAllGroupsR
 	filter += fmt.Sprintf(" OFFSET %v LIMIT %v", offset, req.Limit)
 	fmt.Println("filter: ", filter)
 
-	rows, err := g.db.Query(context.Background(),`SELECT count (id) OVER(),
+	rows, err := g.db.Query(ctx,`SELECT count (id) OVER(),
         id,
         group_id,
         branch_id,
@@ -146,8 +146,7 @@ func (g *GroupRepo) GetAll(req models.GetAllGroupsRequest) (models.GetAllGroupsR
 	return resp, nil
 }
 
-func (g *GroupRepo) GetByID(id string) (models.Group, error) {
-	group := models.Group{}
+func (g *GroupRepo) GetByID(ctx context.Context,group models.Group) (models.Group, error) {
 	var (
 		group_id sql.NullString
 		branch_id sql.NullString
@@ -157,11 +156,11 @@ func (g *GroupRepo) GetByID(id string) (models.Group, error) {
 		updateAt   sql.NullString	
 	)
 
-	err := g.db.QueryRow(context.Background(),
+	err := g.db.QueryRow(ctx,
 	`SELECT  group_id,
 	 branch_id, teacher_id, 
 	 type, created_at, 
-	 updated_at FROM "group" WHERE id = $1`, id).Scan(
+	 updated_at FROM "group" WHERE id = $1`, group.Id).Scan(
 		&group_id,
 		&branch_id,
 		&teacher_id,
@@ -170,12 +169,11 @@ func (g *GroupRepo) GetByID(id string) (models.Group, error) {
 		&updateAt)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				return models.Group{}, fmt.Errorf("student with ID %s not found", id)
+				return models.Group{}, fmt.Errorf("student with ID %s not found", group.Id)
 			}
 		return models.Group{}, err
 	}
 	group = models.Group{
-		Id:id,
 		Group_id: group_id.String,
 		Branch_id: branch_id.String,
 		Teacher_id: teacher_id.String,
@@ -187,7 +185,7 @@ func (g *GroupRepo) GetByID(id string) (models.Group, error) {
 	return group, nil
 }
 
-func (g *GroupRepo) Delete(id string) error {
+func (g *GroupRepo) Delete(ctx context.Context,id string) error {
 	query := `delete from "group" where id = $1`
 	_, err := g.db.Exec(context.Background(),query, id)
 	if err != nil {

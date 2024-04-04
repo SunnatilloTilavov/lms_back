@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"clone/lms_back/config"
 	"clone/lms_back/api/models"
+	"clone/lms_back/service"
 	"clone/lms_back/storage"
 	"strconv"
 	"github.com/gin-gonic/gin"
@@ -11,11 +12,13 @@ import (
 
 type Handler struct {
 	Store storage.IStorage
+	Services service.IServiceManager
 }
 
-func NewStrg(store storage.IStorage) Handler {
+func NewStrg(store storage.IStorage, services service.IServiceManager) Handler {
 	return Handler{
 		Store: store,
+		Services:services,
 	}
 }
 

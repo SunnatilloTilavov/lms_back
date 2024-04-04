@@ -1,10 +1,12 @@
 package handler
 
 import (
-	"clone/lms_back/api/models"
-	"fmt"
 	_ "clone/lms_back/api/docs"
+	"clone/lms_back/api/models"
+	"context"
+	"fmt"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -30,7 +32,7 @@ func (h Handler) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Student().Create(student)
+	id, err := h.Services.Student().Create(context.Background(),student)
 	if err != nil {
 		handleResponse(c, "error while creating student", http.StatusInternalServerError, err.Error())
 		return
@@ -46,7 +48,7 @@ func (h Handler) CreateStudent(c *gin.Context) {
 // @Tags 			      student
 // @Accept 			      json
 // @Produce 		      json
-// @Param 			      id path string true "student.Id"
+// @Param 			      id path string true "student Id"
 // @Param       		  student body models.UpdateStudent true "student"
 // @Success 		      200 {object} models.UpdateStudent
 // @Failure 		      400 {object} models.Response
@@ -61,12 +63,13 @@ func (h Handler) UpdateStudent(c *gin.Context) {
 	}
 
 	student.Id = c.Param("id")
+	fmt.Println("id",student.Id)
 	err := uuid.Validate(student.Id)
 	if err != nil {
 		handleResponse(c, "error while validating", http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.Store.Student().Update(student)
+	id, err := h.Services.Student().Update(context.Background(),student)
 	if err != nil {
 		handleResponse(c, "error while updating student", http.StatusInternalServerError, err.Error())
 		return
@@ -111,7 +114,7 @@ func (h Handler) GetAllStudent(c *gin.Context) {
 	request.Page = page
 	request.Limit = limit
 
-	student, err := h.Store.Student().GetAll(request)
+	student, err := h.Services.Student().GetAllStudents(context.Background(),request)
 	if err != nil {
 		handleResponse(c, "error while getting student", http.StatusInternalServerError, err.Error())
 		return
@@ -132,8 +135,9 @@ func (h Handler) GetAllStudent(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDStudent(c *gin.Context) {
-	Id := c.Param("id")
-	id, err := h.Store.Student().GetByID(Id)
+	var student=models.Student{}
+	student.Id= c.Param("id")
+	id, err := h.Services.Student().GetByIDStudent(context.Background(),student)
 	if err != nil {
 		handleResponse(c, "error while getbyid student", http.StatusInternalServerError, err.Error())
 		return
@@ -163,7 +167,7 @@ func (h Handler) DeleteStudent(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Student().Delete(id)
+	err = h.Services.Student().Delete(context.Background(),id)
 	if err != nil {
 		handleResponse(c, "error while deleting student", http.StatusInternalServerError, err.Error())
 		return

@@ -2,6 +2,7 @@ package models
 
 
 type CreatePayment struct {
+	Id         string  `json:"id"`
 	Price      float64 `json:"price"`
 	Student_id string  `json:"student_id"`
 	Branch_id  string  `json:"branch_id"`

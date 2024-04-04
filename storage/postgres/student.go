@@ -1,13 +1,16 @@
 package postgres
 
 import (
+	"clone/lms_back/api/models"
 	"database/sql"
 	"fmt"
-	"clone/lms_back/api/models"
+	"time"
+
 	// "clone/lms_back/pkg"
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"context"
 )
 
 type StudentRepo struct {
@@ -20,8 +23,7 @@ func NewStudent(db *pgxpool.Pool) StudentRepo {
 	}
 }
 
-func (c *StudentRepo) Create(student models.CreateStudent) (models.CreateStudent, error) {
-
+func (c *StudentRepo) Create(ctx context.Context,student models.CreateStudent) (models.CreateStudent, error) {
 	id := uuid.New()
 	query := `INSERT INTO student (
 		id,
@@ -36,7 +38,7 @@ func (c *StudentRepo) Create(student models.CreateStudent) (models.CreateStudent
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP) 
 	`
 
-	_, err := c.db.Exec(context.Background(),query,
+	_, err := c.db.Exec(ctx,query,
 		id.String(),
 		student.Full_Name,
 	    student.Email,
@@ -53,7 +55,9 @@ func (c *StudentRepo) Create(student models.CreateStudent) (models.CreateStudent
 	return student, nil
 }
 
-func (c *StudentRepo) Update(student models.UpdateStudent) (models.UpdateStudent, error) {
+func (c *StudentRepo) Update(ctx context.Context,student models.UpdateStudent) (models.Student, error) {
+	fmt.Println("id==",student.Id)
+	// id:=student.Id[1:]
 	query := `update student set 
 	full_name=$1,
 	email=$2,
@@ -64,9 +68,9 @@ func (c *StudentRepo) Update(student models.UpdateStudent) (models.UpdateStudent
 	group_id=$7,
 	status=$8,
 	updated_at = CURRENT_TIMESTAMP
-	WHERE id = $9
-	`
-	_, err := c.db.Exec(context.Background(),query,
+	WHERE id = $9`
+
+	_, err := c.db.Exec(ctx,query,
 		student.Full_Name,
 		student.Email,
 		student.Age,
@@ -77,13 +81,25 @@ func (c *StudentRepo) Update(student models.UpdateStudent) (models.UpdateStudent
 		student.Status,
 		student.Id,
     )
-	if err != nil {
-		return student, err
+	student1:=models.Student{
+		Id: student.Id,
+		Full_Name: student.Full_Name,
+		Email: student.Email,
+		Age: student.Age,
+		PaidSum: student.PaidSum,
+		Login: student.Login,
+		Password: student.Password,
+		Status: student.Status,
+		Updated_At: time.Now().String(),
+
 	}
-	return student, nil
+	if err != nil {
+		return student1, err
+	}
+	return student1, nil
 }
 
-func (c *StudentRepo) GetAll(req models.GetAllStudentsRequest) (models.GetAllStudentsResponse, error) {
+func (c *StudentRepo) GetAll(ctx context.Context,req models.GetAllStudentsRequest) (models.GetAllStudentsResponse, error) {
     var (
 		resp   = models.GetAllStudentsResponse{}
 		filter = ""
@@ -97,7 +113,7 @@ func (c *StudentRepo) GetAll(req models.GetAllStudentsRequest) (models.GetAllStu
 	filter += fmt.Sprintf(" OFFSET %v LIMIT %v", offset, req.Limit)
 	fmt.Println("filter: ", filter)
 
-    rows, err := c.db.Query(context.Background(),`select count(id) over(),
+    rows, err := c.db.Query(ctx,`select count(id) over(),
         id,
         full_name,
 		email,
@@ -160,9 +176,8 @@ func (c *StudentRepo) GetAll(req models.GetAllStudentsRequest) (models.GetAllStu
     return resp, nil
 }
 
-func (c *StudentRepo) GetByID(id string) (models.Student, error) {
+func (c *StudentRepo) GetByID(ctx context.Context,student models.Student) (models.Student, error) {
 	var(
-		student = models.Student{}
 		updateAt  sql.NullString
 		group_id  sql.NullString
 		full_name sql.NullString
@@ -175,11 +190,11 @@ func (c *StudentRepo) GetByID(id string) (models.Student, error) {
 		created_at sql.NullString
 		
 	)
-	 err := c.db.QueryRow(context.Background(),
+	 err := c.db.QueryRow(ctx,
 	`select full_name, email,
 	age, paid_sum, status, login,
 	password, group_id, created_at,
-	updated_at from student where id = $1`, id).Scan(
+	updated_at from student where id = $1`, student.Id).Scan(
 		&full_name,
 		&email,
 		&age,
@@ -199,7 +214,6 @@ func (c *StudentRepo) GetByID(id string) (models.Student, error) {
 		}
 	
 		student = models.Student{
-			Id: id,
 			Full_Name:   full_name.String,
 			Email:      email.String,
 			Age:        int(age.Int64),
@@ -214,9 +228,9 @@ func (c *StudentRepo) GetByID(id string) (models.Student, error) {
 		return student, nil
 	}
 	
-func (c *StudentRepo) Delete(id string) error {
+func (c *StudentRepo) Delete(ctx context.Context,id string) error {
 	query := `delete from student where id = $1`
-	_, err := c.db.Exec(context.Background(),query, id)
+	_, err := c.db.Exec(ctx,query, id)
 	if err != nil {
 		return err
 	}

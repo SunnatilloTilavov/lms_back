@@ -104,8 +104,3 @@ CREATE TABLE IF NOT EXISTS "tasks" (
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
  
-
---     "price": 123000.23,
---     "student_id": "7cc44ae9-5ee4-4721-8ad1-9d276db9e6b3",
---     "branch_id": "32a953bc-688a-46cd-a7a6-0fcaf81deb1f",
---     "admin_id": "1eba3c88-9b42-4e8b-aff2-5b93d42438e7"

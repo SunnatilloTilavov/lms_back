@@ -1,10 +1,12 @@
 package handler
 
 import (
-	"clone/lms_back/api/models"
-	"fmt"
 	_ "clone/lms_back/api/docs"
+	"clone/lms_back/api/models"
+	"context"
+	"fmt"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -29,7 +31,7 @@ func (h Handler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Payment().Create(payment)
+	id, err := h.Services.Payment().Create(context.Background(),payment)
 	if err != nil {
 		handleResponse(c, "error while creating payment", http.StatusInternalServerError, err.Error())
 		return
@@ -64,7 +66,7 @@ func (h Handler) UpdatePayment(c *gin.Context) {
 		handleResponse(c, "error while validating", http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.Store.Payment().Update(payment)
+	id, err := h.Services.Payment().Update(context.Background(),payment)
 	if err != nil {
 		handleResponse(c, "error while updating payment", http.StatusInternalServerError, err.Error())
 		return
@@ -109,7 +111,7 @@ func (h Handler) GetAllPayment(c *gin.Context) {
 	request.Page = page
 	request.Limit = limit
 
-	payment, err := h.Store.Payment().GetAll(request)
+	payment, err := h.Services.Payment().GetAllPayments(context.Background(),request)
 	if err != nil {
 		handleResponse(c, "error while getting payment", http.StatusInternalServerError, err.Error())
 		return
@@ -130,11 +132,10 @@ func (h Handler) GetAllPayment(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDPayment(c *gin.Context) {
+payment:=models.Payment{}
+	payment.Id = c.Param("id")
 
-	id := c.Param("id")
-	fmt.Println("id: ", id)
-
-	payment, err := h.Store.Payment().GetByID(id)
+	payment, err := h.Services.Payment().GetByIDPayment(context.Background(),payment)
 	if err != nil {
 		handleResponse(c, "error while getting payment by id", http.StatusInternalServerError, err.Error())
 		return
@@ -164,7 +165,7 @@ func (h Handler) DeletePayment(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Payment().Delete(id)
+	err = h.Services.Payment().Delete(context.Background(),id)
 	if err != nil {
 		handleResponse(c, "error while deleting payment", http.StatusInternalServerError, err.Error())
 		return

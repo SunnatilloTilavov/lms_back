@@ -21,8 +21,7 @@ func NewAdmin(db *pgxpool.Pool) adminRepo {
 	}
 }
 
-func (c *adminRepo) Create(admin models.CreateAdmin) (models.CreateAdmin, error) {
-
+func (c *adminRepo) Create(ctx context.Context,admin models.CreateAdmin) (models.CreateAdmin, error) {
 	id := uuid.New()
 	query := `INSERT INTO "admin" (
 		id,
@@ -36,7 +35,7 @@ func (c *adminRepo) Create(admin models.CreateAdmin) (models.CreateAdmin, error)
 		VALUES($1,$2,$3,$4,$5,$6,$7,CURRENT_TIMESTAMP) 
 	`
 
-	_, err := c.db.Exec(context.Background(), query,
+	_, err := c.db.Exec(ctx, query,
 		id.String(),
 		admin.Full_Name,
 		admin.Email,
@@ -51,7 +50,7 @@ func (c *adminRepo) Create(admin models.CreateAdmin) (models.CreateAdmin, error)
 	return admin, nil
 }
 
-func (c *adminRepo) Update(admin models.UpdateAdmin) (models.UpdateAdmin, error) {
+func (c *adminRepo) Update(ctx context.Context,admin models.UpdateAdmin) (models.UpdateAdmin, error) {
 	query := `update "admin" set 
 	full_name=$1,
 	email=$2,
@@ -62,7 +61,7 @@ func (c *adminRepo) Update(admin models.UpdateAdmin) (models.UpdateAdmin, error)
 	updated_at=CURRENT_TIMESTAMP
 	WHERE id = $7
 	`
-	_, err := c.db.Exec(context.Background(), query,
+	_, err := c.db.Exec(ctx, query,
 		admin.Full_Name,
 		admin.Email,
 		admin.Age,
@@ -77,7 +76,7 @@ func (c *adminRepo) Update(admin models.UpdateAdmin) (models.UpdateAdmin, error)
 	return admin, nil
 }
 
-func (c *adminRepo) GetAll(req models.GetAllAdminsRequest) (models.GetAllAdminsResponse, error) {
+func (c *adminRepo) GetAll(ctx context.Context,req models.GetAllAdminsRequest) (models.GetAllAdminsResponse, error) {
 	var (
 		resp   = models.GetAllAdminsResponse{}
 		filter = ""
@@ -91,7 +90,7 @@ func (c *adminRepo) GetAll(req models.GetAllAdminsRequest) (models.GetAllAdminsR
 	filter += fmt.Sprintf(" OFFSET %v LIMIT %v", offset, req.Limit)
 	fmt.Println("filter: ", filter)
 
-	rows, err := c.db.Query(context.Background(), `select count(id) over(),
+	rows, err := c.db.Query(ctx, `select count(id) over(),
         id,
         full_name,
         email,
@@ -146,8 +145,7 @@ func (c *adminRepo) GetAll(req models.GetAllAdminsRequest) (models.GetAllAdminsR
 	return resp, nil
 }
 
-func (c *adminRepo) GetByID(id string) (models.Admin, error) {
-	admin := models.Admin{}
+func (c *adminRepo) GetByID(ctx context.Context,admin  models.Admin) (models.Admin, error) {
 	var (
 		full_name sql.NullString
 		email     sql.NullString
@@ -157,11 +155,11 @@ func (c *adminRepo) GetByID(id string) (models.Admin, error) {
 		pasword   sql.NullString
 		create_at sql.NullString
 	)
-	err := c.db.QueryRow(context.Background(),
+	err := c.db.QueryRow(ctx,
 		`select full_name, email,
 	age, status, login, 
 	password, created_at
-	from "admin" where id = $1`, id).Scan(
+	from "admin" where id = $1`, admin.Id).Scan(
 		&full_name,
 		&email,
 		&age,
@@ -171,13 +169,11 @@ func (c *adminRepo) GetByID(id string) (models.Admin, error) {
 		&create_at)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Admin{}, fmt.Errorf("student with ID %s not found", id)
+			return models.Admin{}, fmt.Errorf("student with ID %s not found", admin.Id)
 		}
 		return models.Admin{}, err
 	}
 	admin = models.Admin{
-
-		Id:         id,
 		Full_Name:  full_name.String,
 		Email:      email.String,
 		Age:        int(age.Int64),
@@ -189,9 +185,9 @@ func (c *adminRepo) GetByID(id string) (models.Admin, error) {
 	return admin, nil
 }
 
-func (c *adminRepo) Delete(id string) error {
+func (c *adminRepo) Delete(ctx context.Context,id string) error {
 	query := `delete from "admin" where id = $1`
-	_, err := c.db.Exec(context.Background(), query, id)
+	_, err := c.db.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}

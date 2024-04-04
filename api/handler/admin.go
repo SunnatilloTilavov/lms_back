@@ -2,14 +2,14 @@ package handler
 
 import (
 	_ "clone/lms_back/api/docs"
+	"context"
 
 	"clone/lms_back/api/models"
 	"fmt"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-
-
 )
 
 //CreateAdmin godoc
@@ -32,7 +32,7 @@ func (h Handler) CreateAdmin(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Admin().Create(admin)
+	id, err := h.Services.Admin().Create(context.Background(),admin)
 	if err != nil {
 		handleResponse(c, "error while creating admin" , http.StatusInternalServerError, err.Error())
 		return
@@ -66,7 +66,7 @@ func (h Handler) UpdateAdmin(c *gin.Context) {
 		handleResponse(c, "error while validating", http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.Store.Admin().Update(admin)
+	id, err := h.Services.Admin().Update(context.Background(),admin)
 	if err != nil {
 		handleResponse(c, "error while updating admin", http.StatusInternalServerError, err.Error())
 		return
@@ -111,7 +111,7 @@ func (h Handler) GetAllAdmins(c *gin.Context) {
 	request.Page = page
 	request.Limit = limit
 
-	admins, err := h.Store.Admin().GetAll(request)
+	admins, err := h.Services.Admin().GetAllAdmins(context.Background(),request)
 	if err != nil {
 		handleResponse(c,"error while getting admins", http.StatusInternalServerError, err.Error())
 		return
@@ -132,11 +132,9 @@ func (h Handler) GetAllAdmins(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDAdmin(c *gin.Context) {
-	
-	id := c.Param("id")
-	fmt.Println("id: ", id)
-
-	admin, err := h.Store.Admin().GetByID(id)
+	admin:=models.Admin{}
+	admin.Id = c.Param("id")
+	admin, err := h.Services.Admin().GetByIDAdmin(context.Background(),admin)
 	if err != nil {
 		handleResponse(c, "error while getting admin by id", http.StatusInternalServerError, err)
 		return
@@ -166,7 +164,7 @@ func (h Handler) DeleteAdmin(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Admin().Delete(id)
+	err = h.Services.Admin().Delete(context.Background(),id)
 	if err != nil {
 		handleResponse(c, "error while deleting admin", http.StatusInternalServerError, err)
 		return

@@ -1,10 +1,12 @@
 package handler
 
 import (
+	_ "clone/lms_back/api/docs"
 	"clone/lms_back/api/models"
+	"context"
 	"fmt"
 	"net/http"
-	_ "clone/lms_back/api/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -29,7 +31,7 @@ func (h Handler) CreateTeacher(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Teacher().Create(teacher)
+	id, err := h.Services.Teacher().Create(context.Background(),teacher)
 	if err != nil {
 		handleResponse(c, "error while creating teacher", http.StatusInternalServerError, err.Error())
 		return
@@ -57,13 +59,13 @@ func (h Handler) UpdateTeacher(c *gin.Context) {
 		handleResponse(c,"error while decoding request body", http.StatusBadRequest, err.Error())
 		return
 	}
-	teacher.Id = c.Query("id")
+	teacher.Id = c.Param("id")
 	err := uuid.Validate(teacher.Id)
 	if err != nil {
 		handleResponse(c,"error while validating", http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.Store.Teacher().Update(teacher)
+	id, err := h.Services.Teacher().Update(context.Background(),teacher)
 	if err != nil {
 		handleResponse(c, "error while updating teacher", http.StatusInternalServerError, err.Error())
 		return
@@ -109,7 +111,7 @@ func (h Handler) GetAllTeacher(c *gin.Context) {
 	request.Limit = limit
 
 
-	teachers, err := h.Store.Teacher().GetAll(request)
+	teachers, err := h.Services.Teacher().GetAllTeachers(context.Background(),request)
 	if err != nil {
 		handleResponse(c,"error while getting teachers", http.StatusInternalServerError, err.Error())
 		return
@@ -130,11 +132,9 @@ func (h Handler) GetAllTeacher(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDTeacher(c *gin.Context) {
-
-	id := c.Param("id")
-	fmt.Println("id: ", id)
-
-	teacher, err := h.Store.Teacher().GetByID(id)
+	teacher:=models.Teacher{}
+	teacher.Id = c.Param("id")
+	teacher, err := h.Services.Teacher().GetByIDTeacher(context.Background(),teacher)
 	if err != nil {
 		handleResponse(c, "error while getting teacher by id", http.StatusInternalServerError, err.Error())
 		return
@@ -164,7 +164,7 @@ func (h Handler) DeleteTeacher(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Teacher().Delete(id)
+	err = h.Services.Teacher().Delete(context.Background(),id)
 	if err != nil {
 		fmt.Println("error while deleting teacher, err:", err)
 		handleResponse(c, "error while deleting teacher", http.StatusInternalServerError, err)

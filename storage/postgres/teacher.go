@@ -20,9 +20,10 @@ func NewTeacher(db *pgxpool.Pool) TeacherRepo {
 	}
 }
 
-func (c *TeacherRepo) Create(teacher models.CreateTeacher) (models.CreateTeacher, error) {
+func (c *TeacherRepo) Create(ctx context.Context,teacher models.CreateTeacher) (models.CreateTeacher, error) {
 
 	id := uuid.New()
+	teacher.Id=id.String()
 	query := `INSERT INTO teacher (
 		id,
 		full_name,
@@ -34,7 +35,7 @@ func (c *TeacherRepo) Create(teacher models.CreateTeacher) (models.CreateTeacher
 		created_at)
 		VALUES($1,$2,$3,$4,$5,$6,$7,CURRENT_TIMESTAMP) 
 	`
-	_, err := c.db.Exec(context.Background(),query,
+	_, err := c.db.Exec(ctx,query,
 		id.String(),
 		teacher.Full_name,
 	    teacher.Email,
@@ -50,7 +51,7 @@ func (c *TeacherRepo) Create(teacher models.CreateTeacher) (models.CreateTeacher
 	return teacher, nil
 }
 
-func (c *TeacherRepo) Update(teacher models.UpdateTeacher) (models.UpdateTeacher, error) {
+func (c *TeacherRepo) Update(ctx context.Context,teacher models.UpdateTeacher) (models.UpdateTeacher, error) {
 	query := `update teacher set 
 	full_name=$1,
 	email=$2,
@@ -61,7 +62,7 @@ func (c *TeacherRepo) Update(teacher models.UpdateTeacher) (models.UpdateTeacher
 	updated_at = CURRENT_TIMESTAMP
 	WHERE id = $7 AND deleted_at = 0
 	`
-	_, err := c.db.Exec(context.Background(),query,
+	_, err := c.db.Exec(ctx,query,
 		teacher.Full_name,
 		teacher.Email,
 		teacher.Age,
@@ -76,7 +77,7 @@ func (c *TeacherRepo) Update(teacher models.UpdateTeacher) (models.UpdateTeacher
 	return teacher, nil
 }
 
-func (c *TeacherRepo) GetAll(req models.GetAllTeachersRequest) (models.GetAllTeachersResponse, error) {
+func (c *TeacherRepo) GetAll( ctx context.Context,req models.GetAllTeachersRequest) (models.GetAllTeachersResponse, error) {
     var (
 		resp   = models.GetAllTeachersResponse{}
 		filter = ""
@@ -90,7 +91,7 @@ func (c *TeacherRepo) GetAll(req models.GetAllTeachersRequest) (models.GetAllTea
 	filter += fmt.Sprintf(" OFFSET %v LIMIT %v", offset, req.Limit)
 	fmt.Println("filter: ", filter)
 
-    rows, err := c.db.Query(context.Background(),`select count(id) over(),
+    rows, err := c.db.Query(ctx,`select count(id) over(),
         id,
         full_name,
 		email,
@@ -149,8 +150,7 @@ func (c *TeacherRepo) GetAll(req models.GetAllTeachersRequest) (models.GetAllTea
     return resp, nil
 }
 
-func (c *TeacherRepo) GetByID(id string) (models.Teacher, error) {
-	teacher := models.Teacher{}
+func (c *TeacherRepo) GetByID(ctx context.Context,teacher models.Teacher) (models.Teacher, error) {
 	var (
 		updateAt  sql.NullString
 		full_name sql.NullString
@@ -163,10 +163,10 @@ func (c *TeacherRepo) GetByID(id string) (models.Teacher, error) {
 
 	)
 
-	err := c.db.QueryRow(context.Background(),
+	err := c.db.QueryRow(ctx,
 	`select  full_name, email, 
 	age, login, password, status,
-	created_at from teacher where id = $1`, id).Scan(
+	created_at from teacher where id = $1`, teacher.Id).Scan(
 		&full_name,
 		&email,
 		&age,
@@ -178,6 +178,7 @@ func (c *TeacherRepo) GetByID(id string) (models.Teacher, error) {
 		if err != nil {
 		return models.Teacher{}, err
 	}
+	id:=teacher.Id
 	teacher =models.Teacher{
 		Id: id,
 		Full_name: full_name.String,
@@ -193,7 +194,7 @@ func (c *TeacherRepo) GetByID(id string) (models.Teacher, error) {
 	return teacher, nil
 }
 
-func (c *TeacherRepo) Delete(id string) error {
+func (c *TeacherRepo) Delete(ctx context.Context,id string) error {
 	query := `delete from teacher where id = $1`
 	_, err := c.db.Exec(context.Background(),query, id)
 	if err != nil {

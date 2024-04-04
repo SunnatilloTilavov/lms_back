@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"clone/lms_back/config"
 	"clone/lms_back/api"
+	"clone/lms_back/service"
 	"clone/lms_back/storage/postgres"
 	"context"
 )
@@ -17,7 +18,8 @@ func main() {
 	}
 	defer store.CloseDB()
 
-	c := api.New(store)
+	services := service.New(store)
+	c := api.New(services,store)
 
 	fmt.Println("programm is running on localhost:8008...")
 	c.Run(":8008")

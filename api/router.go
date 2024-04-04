@@ -3,6 +3,7 @@ package api
 import (
    "clone/lms_back/api/handler"
 	"clone/lms_back/storage"
+	"clone/lms_back/service"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -15,8 +16,8 @@ import (
 // @version         1.0
 // @description     This is a sample server celler server.
 
-func New(store storage.IStorage) *gin.Engine {
-	h := handler.NewStrg(store)
+func New(services service.IServiceManager,store storage.IStorage) *gin.Engine {
+	h := handler.NewStrg(store,services)
 	r := gin.Default()
 
 	r.POST("/branches", h.CreateBranch)

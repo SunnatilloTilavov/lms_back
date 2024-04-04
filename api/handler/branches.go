@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"clone/lms_back/api/models"
-	"fmt"
 	_ "clone/lms_back/api/docs"
+	"clone/lms_back/api/models"
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,7 @@ func (h Handler) CreateBranch(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Branches().Create(branch)
+	id, err := h.Services.Branches().Create(context.Background(),branch)
 	if err != nil {
 		handleResponse(c, "error while creating branch", http.StatusInternalServerError, err.Error())
 		return
@@ -68,7 +69,7 @@ func (h Handler) UpdateBranch(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Branches().Update(branch)
+	id, err := h.Services.Branches().Update(context.Background(),branch)
 	if err != nil {
 		handleResponse(c, "error while updating branch", http.StatusInternalServerError, err)
 		return
@@ -112,7 +113,7 @@ func (h Handler) GetAllBranches(c *gin.Context) {
 	request.Page = page
 	request.Limit = limit
 
-	branches, err := h.Store.Branches().GetAll(request)
+	branches, err := h.Services.Branches().GetAllBranches(context.Background(),request)
 	if err != nil {
 		handleResponse(c, "error while getting branches", http.StatusInternalServerError, err.Error())
 		return
@@ -133,11 +134,9 @@ func (h Handler) GetAllBranches(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDBranch(c *gin.Context) {
-
-	id := c.Param("id")
-	fmt.Println("id: ", id)
-
-	Branch, err := h.Store.Branches().GetByID(id)
+branch:=models.Branches{}
+	branch.Id = c.Param("id")
+	Branch, err := h.Store.Branches().GetByID(context.Background(),branch)
 	if err != nil {
 		handleResponse(c, "error while getting branch by id", http.StatusInternalServerError, err)
 		return
@@ -167,7 +166,7 @@ func (h Handler) DeleteBranch(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Branches().Delete(id)
+	err = h.Services.Branches().Delete(context.Background(),id)
 	if err != nil {
 		handleResponse(c, "error while deleting branch", http.StatusInternalServerError, err)
 		return

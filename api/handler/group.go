@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"clone/lms_back/api/models"
-	"fmt"
 	_ "clone/lms_back/api/docs"
+	"clone/lms_back/api/models"
+	"context"
+	"fmt"
 
 	"net/http"
 
@@ -32,7 +33,7 @@ func (h Handler) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	id, err := h.Store.Group().Create(group)
+	id, err := h.Services.Group().Create(context.Background(),group)
 	if err != nil {
 		handleResponse(c, "error while creating group", http.StatusInternalServerError, err.Error())
 		return
@@ -66,7 +67,7 @@ func (h Handler) UpdateGroup(c *gin.Context) {
 		handleResponse(c, "error while validating", http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.Store.Group().Update(group)
+	id, err := h.Services.Group().Update(context.Background(),group)
 	if err != nil {
 		handleResponse(c, "error while updating group", http.StatusInternalServerError, err)
 		return
@@ -111,7 +112,7 @@ func (h Handler) GetAllGroups(c *gin.Context) {
 	request.Page = page
 	request.Limit = limit
 
-	groups, err := h.Store.Group().GetAll(request)
+	groups, err := h.Services.Group().GetAllGroups(context.Background(),request)
 	if err != nil {
 		handleResponse(c, "error while getting groups", http.StatusInternalServerError, err.Error())
 		return
@@ -132,11 +133,10 @@ func (h Handler) GetAllGroups(c *gin.Context) {
 // @Failure      404 {object} models.Response
 // @Failure      500 {object} models.Response
 func (h Handler) GetByIDGroup(c *gin.Context) {
-	
-	id := c.Param("id")
-	fmt.Println("id: ", id)
+	group:=models.Group{}
+	group.Id = c.Param("id")
 
-	group, err := h.Store.Group().GetByID(id)
+	group, err := h.Services.Group().GetByIDGroup(context.Background(),group)
 	if err != nil {
 		fmt.Println("error while getting group by id")
 		handleResponse(c, "", http.StatusInternalServerError, err.Error())
@@ -167,7 +167,7 @@ func (h Handler) DeleteGroup(c *gin.Context) {
 		handleResponse(c, "error while validating id", http.StatusBadRequest, err.Error())
 		return
 	}
-	err = h.Store.Group().Delete(id)
+	err = h.Services.Group().Delete(c.Request.Context(),id)
 	if err != nil {
 		handleResponse(c, "error while deleting group", http.StatusInternalServerError, err.Error())
 		return
